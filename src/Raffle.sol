@@ -35,9 +35,10 @@ pragma solidity ^0.8.18;
 contract Raffle {
 
     /*Errors */
-    error SendMoreToEnterRaffle();
+    error Raffle__SendMoreToEnterRaffle(); // add prefix to know from which contract this error is coming 
 
     uint256 private immutable i_entranceFee;
+    address payable[] private s_players; // to keep track of players who enter raffle 
 
     constructor(uint256 entranceFee) {
         i_entranceFee = entranceFee;
@@ -48,12 +49,14 @@ contract Raffle {
 
         // in solidity version 0.8.4, Custom errors are more gas efficient inspite of storing strings
         if(msg.value < i_entranceFee){
-            revert SendMoreToEnterRaffle();
+            revert Raffle__SendMoreToEnterRaffle();
         }
 
         // in solidity version 0.8.26, custom error in require statement, but above way is more gas efficient 
-        // require(msg.value >= i_entranceFee, SendMoreToEnterRaffle()); 
+        // require(msg.value >= i_entranceFee, Raffle__SendMoreToEnterRaffle()); 
         
+        s_players.push(payable(msg.sender)); // Rule of thumb whenever you update storage variable emit events
+
     }
 
     function pickWinner() public {}
