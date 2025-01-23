@@ -38,16 +38,22 @@ contract Raffle {
     error Raffle__SendMoreToEnterRaffle(); // add prefix to know from which contract this error is coming 
 
     uint256 private immutable i_entranceFee;
+    //@dev the duration of the lottery in seconds
+    uint256 private immutable i_interval; 
     address payable[] private s_players; // to keep track of players who enter raffle 
+    uint256 private s_lastTimeStamp; 
 
     /**Events */
     event RaffleEntered(address indexed player); 
 
-    constructor(uint256 entranceFee) {
+    constructor(uint256 entranceFee, uint256 interval) {
         i_entranceFee = entranceFee;
+        i_interval = interval;
+        s_lastTimeStamp = block.timestamp;
     }
 
-    function enterRaffle() public payable{
+    // external function are more gas efficient than public functions
+    function enterRaffle() external payable{
         // require( msg.value >= i_entranceFee, "Not enough ETH Sent!");
 
         // in solidity version 0.8.4, Custom errors are more gas efficient inspite of storing strings
@@ -67,7 +73,15 @@ contract Raffle {
         emit RaffleEntered(msg.sender);
     }
 
-    function pickWinner() public {}
+    // Get a Rnadom Number
+    // use random number to pick a player
+    // automatically call pickWinner function
+    function pickWinner() external {
+        // check to see if enough time has passed
+        if((block.timestamp - s_lastTimeStamp) < i_interval){
+            revert();
+        }
+    }
 
     /**Getter function */
     function getEntranceFee() public view returns (uint256){
