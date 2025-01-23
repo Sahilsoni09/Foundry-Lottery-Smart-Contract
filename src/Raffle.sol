@@ -40,6 +40,9 @@ contract Raffle {
     uint256 private immutable i_entranceFee;
     address payable[] private s_players; // to keep track of players who enter raffle 
 
+    /**Events */
+    event RaffleEntered(address indexed player); 
+
     constructor(uint256 entranceFee) {
         i_entranceFee = entranceFee;
     }
@@ -57,6 +60,11 @@ contract Raffle {
         
         s_players.push(payable(msg.sender)); // Rule of thumb whenever you update storage variable emit events
 
+
+        // Reason for using events:
+        //1.  Makes migration easier
+        //2. makes frontend indexing easier
+        emit RaffleEntered(msg.sender);
     }
 
     function pickWinner() public {}
