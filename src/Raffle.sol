@@ -38,7 +38,15 @@ contract Raffle is VRFConsumerBaseV2Plus {
     /*Errors */
     error Raffle__SendMoreToEnterRaffle(); // add prefix to know from which contract this error is coming
     error Raffle__TransferFailed();
+    error Raffle__RaffleNotOpen();
 
+    /* Type Declaration */
+    enum RaffleState{
+        OPEN, 
+        CALCULATING
+    }
+
+    /* State Varibales */
     uint16 private constant REQUEST_CONFIRMATION = 3;
     uint32 private constant NUM_WORDS = 1;
     uint256 private immutable i_entranceFee;
@@ -50,6 +58,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     address payable[] private s_players; // to keep track of players who enter raffle
     uint256 private s_lastTimeStamp;
     address private s_recentWinner;
+    RaffleState private s_raffleState;
 
     /**Events */
     event RaffleEntered(address indexed player);
@@ -66,10 +75,12 @@ contract Raffle is VRFConsumerBaseV2Plus {
     ) VRFConsumerBaseV2Plus(vrfCoordinator) {
         i_entranceFee = entranceFee;
         i_interval = interval;
-        s_lastTimeStamp = block.timestamp;
         i_keyHash = gasLane;
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
+
+        s_lastTimeStamp = block.timestamp;
+        s_raffleState = RaffleState.OPEN;
     }
 
     // external function are more gas efficient than public functions
@@ -79,6 +90,10 @@ contract Raffle is VRFConsumerBaseV2Plus {
         // in solidity version 0.8.4, Custom errors are more gas efficient inspite of storing strings
         if (msg.value < i_entranceFee) {
             revert Raffle__SendMoreToEnterRaffle();
+        }
+
+        if(s_raffleState != RaffleState.OPEN){
+            revert Raffle__RaffleNotOpen();
         }
 
         // in solidity version 0.8.26, custom error in require statement, but above way is more gas efficient
@@ -100,6 +115,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
         if ((block.timestamp - s_lastTimeStamp) < i_interval) {
             revert();
         }
+
+        s_raffleState = RaffleState.CALCULATING;
 
         // Getting a Random number is a two transaction process
         // 1. Request a random number
@@ -124,6 +141,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         uint256 indexOfWinner = randomWords[0] % s_players.length;
         address payable winner = s_players[indexOfWinner];
         s_recentWinner = winner;
+        s_raffleState = RaffleState.OPEN;
         (bool success, ) = winner.call{value: address(this).balance}("");
         if(!success){
             revert Raffle__TransferFailed();
