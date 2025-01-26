@@ -39,6 +39,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__SendMoreToEnterRaffle(); // add prefix to know from which contract this error is coming
     error Raffle__TransferFailed();
     error Raffle__RaffleNotOpen();
+    error Raffle__UpkeepNotNeeded(uint256 balance, uint256 playersLength, uint256 raffleState);
 
     /* Type Declaration */
     enum RaffleState {
@@ -108,16 +109,16 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     // When should the winner be picked ?
     /**
-    @dev This is the function that the chainlink node will call to see
-    if the lottery is ready to have a winner picked
-    The following should be true in order for upKeepNeeded to be true:
-    1. The time interval has passed between raffle
-    2. The lottery is open 
-    3. The Contract has ETH
-    4. Implicitly your subscription has Link
-    @param - ignored
-    @return - upKeepNeeded - true if its time to restart the lottery 
-    @return - ignored
+    *@dev This is the function that the chainlink node will call to see
+    *if the lottery is ready to have a winner picked
+    *The following should be true in order for upKeepNeeded to be true:
+    *1. The time interval has passed between raffle
+    *2. The lottery is open 
+    *3. The Contract has ETH
+    *4. Implicitly your subscription has Link
+    *@param - ignored
+    *@return upkeepNeeded - true if its time to restart the lottery 
+    *@return ignored
      */
     function checkUpkeep(
         bytes memory /*checkData*/
@@ -137,7 +138,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         // check to see if enough time has passed
         (bool upkeepNeeded, ) = checkUpkeep("");
         if(!upkeepNeeded){
-            revert();
+            revert Raffle__UpkeepNotNeeded(address(this).balance, s_players.length, uint256(s_raffleState));
         }
 
         s_raffleState = RaffleState.CALCULATING;
@@ -175,7 +176,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         s_raffleState = RaffleState.OPEN;
         s_players = new address payable[](0);
         s_lastTimeStamp = block.timestamp;
-        emit WinnerPicked(recentWinner);
+        emit WinnerPicked(s_recentWinner);
 
         // interaction(External contract interaction)
         (bool success, ) = winner.call{value: address(this).balance}("");
