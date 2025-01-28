@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity ^0.8.18;
 
 import {Script} from "forge-std/Script.sol";
 import {VRFCoordinatorV2_5Mock} from "lib/chainlink-brownie-contracts/contracts/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
@@ -42,6 +42,10 @@ contract HelperConfig is CodeConstants,Script {
         }else{
             revert HelperConfig__InvalidChainId();
         }
+    }
+
+    function getConfig() public returns(NetworkConfig memory){
+        return getConfigByChainId(block.chainid);
     }
 
     function getSepoliaETHConfig() public pure returns(NetworkConfig memory){
